@@ -6,8 +6,8 @@ import streamlit as st
 import gdown
 from fraud_preprocessor import FraudPreprocessor  # needed for joblib load
 
-st.set_page_config(page_title="Fraud Detection (Real-time Dummy Stream)", page_icon="💳", layout="wide")
-st.title("💳 Fraud Detection System — Dummy Real-time Streaming")
+st.set_page_config(page_title="Fraud Detection (Real-time Stream)", page_icon="💳", layout="wide")
+st.title("💳 Fraud Detection System — Simulation Real-time Streaming")
 
 FILE_ID = "1uheCe1Z8Sb6zW0a6PB62upfsx81EdhJC"
 LOCAL_PATH = "data/fraudTest.csv"
@@ -99,3 +99,4 @@ if start:
         time.sleep(speed)
 
     st.success("✅ Streaming finished.")
+
