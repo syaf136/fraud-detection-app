@@ -3,19 +3,18 @@ import time
 import joblib
 import numpy as np
 import pandas as pd
-import streamlit as st 
+import streamlit as st
 import gdown
-import plotly.express as px
-
-# ---- Plotly gauge (safe import) ----
-try:
-    import plotly.express as px  # not used directly, but keep if installed
-    PLOTLY_OK = True
-except Exception:
-    PLOTLY_OK = False
 
 # Needed for joblib load (custom class inside joblib)
 from fraud_preprocessor import FraudPreprocessor
+
+# ---- Plotly gauge (safe import) ----
+try:
+    import plotly.graph_objects as go
+    PLOTLY_OK = True
+except Exception:
+    PLOTLY_OK = False
 
 # =========================
 # Page config
@@ -32,49 +31,18 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* ---------- App background + sidebar ---------- */
     [data-testid="stAppViewContainer"] { background: #0b0f14; }
     [data-testid="stSidebar"] { background: #0a0d12; border-right: 1px solid #1f2937; }
     [data-testid="stHeader"] { background: rgba(0,0,0,0); }
     .block-container { padding-top: 1rem; }
 
-    /* ---------- Global text colors ---------- */
     html, body, [class*="css"]  { color: #f9fafb !important; }
     h1, h2, h3, h4, h5, h6 { color: #ffffff !important; font-weight: 800; }
     p, span, label, div { color: #e5e7eb !important; }
 
-    /* =========================
-       FILE UPLOADER (Dark Theme)
-       ========================= */
-    [data-testid="stFileUploader"] {
-        background: #0f172a !important;
-        border: 1px solid #334155 !important;
-        border-radius: 12px !important;
-        padding: 12px !important;
-    }
-    [data-testid="stFileUploaderDropzone"] {
-        background: #111827 !important;
-        border: 2px dashed #374151 !important;
-        border-radius: 12px !important;
-    }
-    [data-testid="stFileUploaderDropzone"] * {
-        color: #e5e7eb !important;
-        font-weight: 600 !important;
-    }
-    [data-testid="stFileUploaderDropzone"] svg {
-        fill: #e5e7eb !important;
-        color: #e5e7eb !important;
-    }
-    [data-testid="stFileUploaderDropzone"]:hover {
-        border-color: #60a5fa !important;
-        background: #0b1220 !important;
-    }
-
-    /* ---------- Metric colors ---------- */
     [data-testid="stMetricLabel"] { color: #cbd5f5 !important; }
     [data-testid="stMetricValue"] { color: #ffffff !important; font-size: 28px; font-weight: 800; }
 
-    /* ---------- Status banners ---------- */
     .status-ok {
         background: #064e3b;
         border: 1px solid #10b981;
@@ -92,7 +60,6 @@ st.markdown(
         font-weight: 700;
     }
 
-    /* ---------- Title helpers ---------- */
     .title { font-size: 34px; font-weight: 900; color: #ffffff; }
     .subtle { color: #9ca3af !important; }
     .pill {
@@ -100,9 +67,6 @@ st.markdown(
         border:1px solid #2b3444; color:#cbd5e1 !important; font-size:12px;
     }
 
-    /* =========================
-       BUTTON STYLES (PRIMARY)
-       ========================= */
     button[kind="primary"] {
         background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
         color: #ffffff !important;
@@ -118,10 +82,6 @@ st.markdown(
         box-shadow: 0 0 18px rgba(37, 99, 235, 0.9);
         transform: translateY(-1px);
     }
-    button[kind="primary"]:active {
-        background: #1e3a8a !important;
-        transform: translateY(0px);
-    }
     button[kind="primary"]:disabled {
         background: #1f2937 !important;
         color: #9ca3af !important;
@@ -129,6 +89,27 @@ st.markdown(
         box-shadow: none !important;
         opacity: 1 !important;
         cursor: not-allowed !important;
+    }
+
+    /* File uploader dark */
+    [data-testid="stFileUploader"] {
+        background: #0f172a !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+        padding: 12px !important;
+    }
+    [data-testid="stFileUploaderDropzone"] {
+        background: #111827 !important;
+        border: 2px dashed #374151 !important;
+        border-radius: 12px !important;
+    }
+    [data-testid="stFileUploaderDropzone"] * {
+        color: #e5e7eb !important;
+        font-weight: 600 !important;
+    }
+    [data-testid="stFileUploaderDropzone"]:hover {
+        border-color: #60a5fa !important;
+        background: #0b1220 !important;
     }
     </style>
     """,
@@ -187,17 +168,13 @@ def drop_label_cols(df: pd.DataFrame):
     return df.drop(columns=[label_col]).copy(), label_col
 
 def prepare_features(pre, model_feature_names, raw_df: pd.DataFrame):
-    """
-    IMPORTANT:
-    - Ensure label column (is_fraud etc) is NOT used for prediction
-    """
     feature_df, _ = drop_label_cols(raw_df)
     X = pre.transform(feature_df)
     if model_feature_names is not None:
         X = X.reindex(columns=model_feature_names, fill_value=0)
     return X
 
-def predict_one_row(row_df: pd.DataFrame, threshold: float):
+def predict_one_row(pre, model, feature_names, row_df: pd.DataFrame, threshold: float):
     t0 = time.perf_counter()
     X = prepare_features(pre, feature_names, row_df)
     proba = float(model.predict_proba(X)[0, 1])
@@ -205,7 +182,7 @@ def predict_one_row(row_df: pd.DataFrame, threshold: float):
     elapsed_ms = (time.perf_counter() - t0) * 1000.0
     return proba, pred, elapsed_ms
 
-def predict_proba_for_df(df_in: pd.DataFrame, threshold: float):
+def predict_proba_for_df(pre, model, feature_names, df_in: pd.DataFrame, threshold: float):
     X = prepare_features(pre, feature_names, df_in)
     proba = model.predict_proba(X)[:, 1]
     pred = (proba >= threshold).astype(int)
@@ -218,63 +195,42 @@ def build_result_df(raw_df: pd.DataFrame, proba: np.ndarray, pred: np.ndarray):
     return out
 
 def confidence_level(proba: float, threshold: float):
-    # Simple, defensible UI logic (not model logic)
     if proba >= threshold:
         return "High" if proba >= 0.80 else "Medium"
-    else:
-        return "High" if proba <= 0.05 else "Medium"
+    return "High" if proba <= 0.05 else "Medium"
 
 def plot_risk_gauge(risk_pct: float):
-    """
-    Gauge = fraud_probability * 100
-    Uses Plotly if available; otherwise fallback to a simple metric.
-    """
+    # Gauge = fraud_probability * 100
     if not PLOTLY_OK:
         st.metric("Risk Level", f"{risk_pct:.1f}%")
         return
 
-    fig = {
-        "data": [{
-            "type": "indicator",
-            "mode": "gauge+number",
-            "value": risk_pct,
-            "number": {"suffix": "%", "font": {"size": 46, "color": "white"}},
-            "gauge": {
-                "axis": {"range": [0, 100], "tickwidth": 1, "tickcolor": "white"},
-                "bar": {"color": "#60a5fa"},
-                "steps": [
-                    {"range": [0, 30], "color": "#14532d"},
-                    {"range": [30, 70], "color": "#854d0e"},
-                    {"range": [70, 100], "color": "#7f1d1d"},
-                ],
-                "threshold": {
-                    "line": {"color": "red", "width": 4},
-                    "thickness": 0.75,
-                    "value": 50,
-                },
-            },
-            "title": {"text": "Risk Level", "font": {"size": 20, "color": "white"}},
-        }],
-        "layout": {
-            "paper_bgcolor": "rgba(0,0,0,0)",
-            "plot_bgcolor": "rgba(0,0,0,0)",
-            "margin": {"l": 20, "r": 20, "t": 60, "b": 20},
-            "height": 260,
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=risk_pct,
+        number={"suffix": "%", "font": {"size": 46, "color": "white"}},
+        title={"text": "Risk Level", "font": {"size": 20, "color": "white"}},
+        gauge={
+            "axis": {"range": [0, 100], "tickcolor": "white"},
+            "bar": {"color": "#60a5fa"},
+            "steps": [
+                {"range": [0, 30], "color": "#14532d"},
+                {"range": [30, 70], "color": "#854d0e"},
+                {"range": [70, 100], "color": "#7f1d1d"},
+            ],
+            "threshold": {"line": {"color": "red", "width": 4}, "value": 50},
         }
-    }
+    ))
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=20, r=20, t=50, b=10),
+        height=260,
+        font=dict(color="white")
+    )
     st.plotly_chart(fig, use_container_width=True)
 
 def show_analysis_panel(row_df: pd.DataFrame, proba: float, pred: int, elapsed_ms: float, threshold: float):
-    """
-    Shows exactly the requested Analysis panel:
-    - Fraud Probability (Model)
-    - Decision Threshold
-    - Prediction
-    - Detection Time
-    - Confidence Level
-    - Gauge = proba*100
-    """
-    # Transaction fields (best-effort)
     t = row_df.iloc[0].to_dict()
     merch = t.get("merchant", "—")
     cat = t.get("category", "—")
@@ -287,7 +243,6 @@ def show_analysis_panel(row_df: pd.DataFrame, proba: float, pred: int, elapsed_m
     pred_label = "FRAUD" if pred == 1 else "LEGIT"
 
     st.markdown("### 🔍 Analysis")
-
     a, b, c = st.columns([1.4, 1.3, 1.3])
 
     with a:
@@ -315,17 +270,11 @@ st.sidebar.markdown("## ⚙️ Control Panel")
 mode = st.sidebar.radio("Select Mode", ["📊 Dashboard Overview", "🔎 Real-time Detection"])
 
 st.sidebar.markdown("### 🎛️ Detection Settings")
-threshold = st.sidebar.slider(
-    "Fraud Threshold (Probability)",
-    min_value=0.000001,
-    max_value=0.99,
-    value=0.01,
-    step=0.01
-)
+threshold = st.sidebar.slider("Fraud Threshold (Probability)", 0.000001, 0.99, 0.01, 0.01)
 speed = st.sidebar.slider("Seconds per transaction", 0.0, 2.0, 0.2, 0.1)
 
 # =========================
-# Load model + default data
+# Load model + data
 # =========================
 top_msg1 = st.empty()
 top_msg2 = st.empty()
@@ -339,20 +288,90 @@ default_df = download_and_load_default_data()
 top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df)}</div>", unsafe_allow_html=True)
 
 # =========================
-# Pages
+# PAGE 1: Dashboard Overview
 # =========================
+# ---------- Dashboard Overview ----------
+if mode == "📊 Dashboard Overview":
+    st.markdown("## 📊 Dashboard Overview")
+    st.markdown("<span class='pill'>Default source: fraudTest</span>", unsafe_allow_html=True)
+    st.write("")
 
-# ---------- Dashboard Overview ---------- if mode == "📊 Dashboard Overview": st.markdown("## 📊 Dashboard Overview") st.markdown("<span class='pill'>Default source: fraudTest</span>", unsafe_allow_html=True) st.write("") sample_n = min(555719, len(default_df)) sample_df = default_df.head(sample_n) proba_s, pred_s = predict_proba_for_df(sample_df) total = int(len(sample_df)) fraud_count = int(pred_s.sum()) fraud_rate = (fraud_count / total) * 100 if total else 0.0 c1, c2, c3, c4 = st.columns(4) c1.metric("Total Transactions", f"{total:,}") c2.metric("Detected Fraud)", f"{fraud_count:,}") c3.metric("Fraud Rate", f"{fraud_rate:.2f}%") c4.metric("Threshold", f"{threshold}") st.divider() colL, colR = st.columns(2) # ===== Graph 1: Amount Distribution (use readable buckets + axis labels) ===== with colL: st.subheader("Transaction Amount Distribution") st.caption("Amount Distribution by Predicted Fraud Status") if "amt" not in sample_df.columns: st.warning("Column amt not found.") else: tmp = sample_df.copy() tmp["pred_label"] = np.where(pred_s == 1, "FRAUD", "LEGIT") # readable buckets (RM) bins = [0, 10, 50, 100, 200, 500, 1000, np.inf] labels = ["0–10", "10–50", "50–100", "100–200", "200–500", "500–1000", ">1000"] tmp["amount_bucket"] = pd.cut(tmp["amt"].astype(float), bins=bins, labels=labels, include_lowest=True) count_df = ( tmp.groupby(["amount_bucket", "pred_label"]) .size() .reset_index(name="count") ) fig1 = px.bar( count_df, x="amount_bucket", y="count", color="pred_label", barmode="group", labels={ "amount_bucket": "Transaction Amount Range (RM)", "count": "Number of Transactions", "pred_label": "Predicted Fraud Status" }, title="" ) fig1.update_layout( paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"), legend_title_text="Fraud Status", xaxis=dict(title="Transaction Amount Range (USD)"), yaxis=dict(title="Number of Transactions"), ) st.plotly_chart(fig1, use_container_width=True) # ===== Graph 2: Fraud Rate by Category + axis labels ===== with colR: st.subheader("Fraud by Merchant Category") st.caption("Fraud Rate (%) by Category (Predicted)") if "category" not in sample_df.columns: st.warning("Column category not found.") else: tmp = sample_df.copy() tmp["pred"] = pred_s.astype(int) rate = ( tmp.groupby("category")["pred"] .mean() .mul(100) .sort_values(ascending=False) .head(15) .reset_index(name="fraud_rate_pct") ) fig2 = px.bar( rate, x="category", y="fraud_rate_pct", labels={ "category": "Merchant Category", "fraud_rate_pct": "Fraud Rate (%)" }, title="" ) fig2.update_layout( paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"), xaxis_tickangle=-25, xaxis=dict(title="Merchant Category"), yaxis=dict(title="Fraud Rate (%)"), ) st.plotly_chart(fig2, use_container_width=True) st.info("Overview uses a sample for speed. Use Real-time Detection for streaming/row-based testing.")
+    sample_n = min(555719, len(default_df))
+    sample_df = default_df.head(sample_n)
 
-    # ==========================================================
-    # Graph 2: Fraud Rate by Category (Top 15)
-    # ==========================================================
+    # ✅ Make sure your function call matches your function signature
+    proba_s, pred_s = predict_proba_for_df(sample_df, threshold)
+
+    total = int(len(sample_df))
+    fraud_count = int(pred_s.sum())
+    fraud_rate = (fraud_count / total) * 100 if total else 0.0
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Total Transactions", f"{total:,}")
+    c2.metric("Detected Fraud", f"{fraud_count:,}")
+    c3.metric("Fraud Rate", f"{fraud_rate:.2f}%")
+    c4.metric("Threshold", f"{threshold:.2f}")
+
+    st.divider()
+    colL, colR = st.columns(2)
+
+    # ===== Graph 1: Amount Distribution =====
+    with colL:
+        st.subheader("Transaction Amount Distribution")
+        st.caption("Amount Distribution by Predicted Fraud Status")
+
+        if "amt" not in sample_df.columns:
+            st.warning("Column `amt` not found.")
+        else:
+            tmp = sample_df.copy()
+            tmp["pred_label"] = np.where(pred_s == 1, "FRAUD", "LEGIT")
+
+            # buckets in USD
+            bins = [0, 10, 50, 100, 200, 500, 1000, np.inf]
+            labels = ["0–10", "10–50", "50–100", "100–200", "200–500", "500–1000", ">1000"]
+
+            tmp["amount_bucket"] = pd.cut(
+                tmp["amt"].astype(float),
+                bins=bins,
+                labels=labels,
+                include_lowest=True
+            )
+
+            count_df = (
+                tmp.groupby(["amount_bucket", "pred_label"])
+                   .size()
+                   .reset_index(name="count")
+            )
+
+            fig1 = px.bar(
+                count_df,
+                x="amount_bucket",
+                y="count",
+                color="pred_label",
+                barmode="group",
+                labels={
+                    "amount_bucket": "Transaction Amount Range (USD)",
+                    "count": "Number of Transactions",
+                    "pred_label": "Predicted Fraud Status"
+                }
+            )
+            fig1.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="white"),
+                legend_title_text="Fraud Status",
+                xaxis=dict(title="Transaction Amount Range (USD)"),
+                yaxis=dict(title="Number of Transactions"),
+            )
+            st.plotly_chart(fig1, use_container_width=True)
+
+    # ===== Graph 2: Fraud Rate by Category =====
     with colR:
         st.subheader("Fraud by Merchant Category")
-        st.caption("Predicted fraud rate (%) by category (top 15)")
+        st.caption("Fraud Rate (%) by Category (Predicted)")
 
         if "category" not in sample_df.columns:
-            st.warning("Column `category` not found in dataset.")
+            st.warning("Column `category` not found.")
         else:
             tmp = sample_df.copy()
             tmp["pred"] = pred_s.astype(int)
@@ -363,23 +382,48 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
                    .mul(100)
                    .sort_values(ascending=False)
                    .head(15)
+                   .reset_index(name="fraud_rate_pct")
             )
 
-            fig, ax = plt.subplots()
-            ax.bar(rate.index.astype(str), rate.values)
-            ax.set_xlabel("Merchant Category")
-            ax.set_ylabel("Fraud Rate (%)")
-            ax.set_title("Top 15 Categories by Predicted Fraud Rate")
-            plt.xticks(rotation=30, ha="right")
+            fig2 = px.bar(
+                rate,
+                x="category",
+                y="fraud_rate_pct",
+                labels={
+                    "category": "Merchant Category",
+                    "fraud_rate_pct": "Fraud Rate (%)"
+                }
+            )
+            fig2.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="white"),
+                xaxis_tickangle=-25,
+                xaxis=dict(title="Merchant Category"),
+                yaxis=dict(title="Fraud Rate (%)"),
+            )
+            st.plotly_chart(fig2, use_container_width=True)
 
-            st.pyplot(fig)
-
-    st.info("Overview uses a sample for speed. Use Real-time Detection for per-transaction analysis.")
+    st.info("Overview uses a sample for speed. Use Real-time Detection for streaming/row-based testing.")
 
 
-    # -----------------------------
-    # 1) RANDOM
-    # -----------------------------
+# =========================
+# PAGE 2: Real-time Detection
+# =========================
+elif mode == "🔎 Real-time Detection":
+    st.markdown("## 🔎 Real-time Detection")
+    st.markdown("<span class='pill'>3 input modes</span>", unsafe_allow_html=True)
+    st.write("")
+
+    input_method = st.radio(
+        "Input Method",
+        ["🎲 Random from Default Dataset", "📌 By Rows (Stream)", "📤 Upload Another Dataset"],
+        horizontal=True
+    )
+
+    st.divider()
+
+    # -------- 1) Random --------
     if input_method == "🎲 Random from Default Dataset":
         left, right = st.columns([2, 1])
 
@@ -396,7 +440,7 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
                 idx = int(np.random.randint(0, len(default_df)))
                 row_df = default_df.iloc[[idx]]
 
-                proba, pred, elapsed_ms = predict_one_row(row_df, threshold)
+                proba, pred, elapsed_ms = predict_one_row(pre, model, feature_names, row_df, threshold)
 
                 st.session_state.rand_idx = idx
                 st.session_state.rand_proba = proba
@@ -407,12 +451,11 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
                 idx = st.session_state.rand_idx
                 row_df = default_df.iloc[[idx]]
 
-                # Show row WITHOUT label
-                shown_row, label_col = drop_label_cols(row_df)
+                shown_row, label_col = drop_label_cols(row_df)   # ✅ hide label from analyze display
+
                 st.caption(f"Selected row index: {idx}")
                 st.dataframe(shown_row, use_container_width=True)
 
-                # Show Analysis panel (your requested format)
                 show_analysis_panel(
                     row_df=row_df,
                     proba=float(st.session_state.rand_proba),
@@ -421,7 +464,6 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
                     threshold=threshold
                 )
 
-                # Verification (raw row)
                 st.markdown("### ✅ Verification")
                 if label_col is not None:
                     actual = int(row_df.iloc[0][label_col])
@@ -433,12 +475,10 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
         with right:
             st.markdown("### ℹ️ Tips")
             st.write("- Threshold 0.01 means 1.0% risk cutoff.")
-            st.write("- Fraud Probability is model output.")
-            st.write("- Risk Level gauge = probability × 100")
+            st.write("- Gauge = fraud_probability × 100.")
+            st.write("- Analyze view hides label; verification shows it.")
 
-    # -----------------------------
-    # 2) STREAM BY ROWS  (WITH ANALYSIS PANEL)
-    # -----------------------------
+    # -------- 2) Stream --------
     elif input_method == "📌 By Rows (Stream)":
         st.markdown("### 📌 Stream by Row Range")
 
@@ -459,9 +499,7 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
         status = st.empty()
         alert_box = st.empty()
         table_box = st.empty()
-
-        # Live analysis placeholders
-        analysis_container = st.container()
+        analysis_box = st.container()
 
         if stream_btn:
             shown = []
@@ -476,7 +514,7 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
                     break
 
                 row_df = default_df.iloc[[i]]
-                proba, pred, elapsed_ms = predict_one_row(row_df, threshold)
+                proba, pred, elapsed_ms = predict_one_row(pre, model, feature_names, row_df, threshold)
 
                 if pred == 1:
                     fraud_count += 1
@@ -503,25 +541,16 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
 
                 table_box.dataframe(pd.DataFrame(shown).tail(20), use_container_width=True)
 
-                # ✅ Live Analysis for the current streamed row
-                with analysis_container:
+                with analysis_box:
                     st.markdown("---")
                     st.caption(f"Current row: {i}")
-                    show_analysis_panel(
-                        row_df=row_df,
-                        proba=proba,
-                        pred=pred,
-                        elapsed_ms=elapsed_ms,
-                        threshold=threshold
-                    )
+                    show_analysis_panel(row_df, proba, pred, elapsed_ms, threshold)
 
                 time.sleep(speed)
 
             st.success("✅ Streaming finished.")
 
-    # -----------------------------
-    # 3) UPLOAD DATASET
-    # -----------------------------
+    # -------- 3) Upload --------
     else:
         st.markdown("### 📤 Upload Another Dataset (CSV)")
         uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
@@ -535,7 +564,7 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
             st.dataframe(show_df.head(20), use_container_width=True)
 
             if st.button("Run Prediction on Uploaded Dataset", type="primary", use_container_width=True):
-                proba, pred = predict_proba_for_df(new_df, threshold)
+                proba, pred = predict_proba_for_df(pre, model, feature_names, new_df, threshold)
                 result = build_result_df(show_df, proba, pred)
 
                 st.warning(f"🚨 Total Fraud Detected: {int((pred == 1).sum()):,} / {len(result):,}")
@@ -547,6 +576,7 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
 
 
