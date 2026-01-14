@@ -580,11 +580,6 @@ elif mode == "🔎 Real-time Detection":
                     st.write(f"**Detection Time:** {elapsed_ms:.2f} ms")
 
                 with c:
-                    st.markdown("#### Similar Transactions")
-                    st.write(f"**Total Found:** {similar_total}")
-                    st.write(f"**Fraud Count:** {similar_fraud}")
-                    st.write(f"**Fraud Ratio:** {fraud_ratio:.1f}%")
-                    st.write("")  # spacing
                     plot_risk_gauge(risk_pct)
 
 
@@ -696,6 +691,7 @@ elif mode == "🔎 Real-time Detection":
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
 
 
