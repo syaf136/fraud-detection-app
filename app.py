@@ -601,12 +601,6 @@ elif mode == "🔎 Real-time Detection":
 
                 st.dataframe(chosen_row, use_container_width=True)
 
-        with right:
-            st.markdown("### ℹ️ Tips")
-            st.write("- Lower threshold (0.01) shows more alerts.")
-            st.write("- Model NEVER uses `is_fraud` for prediction (it is dropped before preprocessing).")
-            st.write("- Similar Transactions is a prototype feature (simple similarity).")
-
     # ========== 2) By rows (stream) ==========
     elif input_method == "📌 By Rows (Stream)":
         st.markdown("### 📌 Stream by Row Range")
@@ -702,6 +696,7 @@ elif mode == "🔎 Real-time Detection":
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
 
 
