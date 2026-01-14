@@ -593,15 +593,10 @@ elif mode == "🔎 Real-time Detection":
                     st.write("")  # spacing
                     plot_risk_gauge(risk_pct)
 
-                with st.expander("📌 View Similar Transactions (sample)"):
-                    # Hide label column if present
-                    lbl = find_label_col(neighbors)
-                    st.dataframe(neighbors.drop(columns=[lbl]) if lbl else neighbors, use_container_width=True)
-
                 # Verification section (show exact row + actual label if exists)
                 st.write("")
-                st.markdown("### ✅ Verification (Exact Row from Dataset)")
-                st.markdown("<div class='subtle'>This is the exact raw row from fraudTest (including label if it exists).</div>", unsafe_allow_html=True)
+                st.markdown("### ✅ Verification")
+                st.markdown("<div class='subtle'>This is the exact raw row from fraudTest.</div>", unsafe_allow_html=True)
 
                 if label_col is not None:
                     actual = chosen_row.iloc[0][label_col]
@@ -762,7 +757,5 @@ else:
 
     st.info("For true model performance metrics (Accuracy/Recall/ROC-AUC), use your training/testing evaluation scripts.")
 
-# ---------- Data Preview ----------
-with st.expander("📄 View default dataset preview (fraudTest)"):
-    st.dataframe(default_df.head(30), use_container_width=True)
+
 
