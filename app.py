@@ -342,79 +342,7 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
 # Pages
 # =========================
 
-if mode == "📊 Dashboard Overview":
-    import matplotlib.pyplot as plt
-
-    st.markdown("## 📊 Dashboard Overview")
-    st.markdown("<span class='pill'>Default source: fraudTest</span>", unsafe_allow_html=True)
-    st.write("")
-
-    # Use a sample for speed (change size if you want)
-    sample_n = min(50000, len(default_df))
-    sample_df = default_df.head(sample_n)
-
-    # Predict on sample (label is dropped inside prepare_features)
-    proba_s, pred_s = predict_proba_for_df(sample_df, threshold)
-
-    total = int(len(sample_df))
-    fraud_count = int(pred_s.sum())
-    fraud_rate = (fraud_count / total) * 100 if total else 0.0
-
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Transactions (sample)", f"{total:,}")
-    c2.metric("Detected Fraud (sample)", f"{fraud_count:,}")
-    c3.metric("Fraud Rate (sample)", f"{fraud_rate:.2f}%")
-    c4.metric("Threshold", f"{threshold:.2f}")
-
-    st.divider()
-
-    colL, colR = st.columns(2)
-
-    # ==========================================================
-    # Graph 1: Transaction Amount Distribution (BINS + LABELS)
-    # ==========================================================
-    with colL:
-        st.subheader("Transaction Amount Distribution")
-        st.caption("Amount distribution by predicted fraud status")
-
-        if "amt" not in sample_df.columns:
-            st.warning("Column `amt` not found in dataset.")
-        else:
-            tmp = sample_df.copy()
-            tmp["pred_label"] = np.where(pred_s == 1, "FRAUD", "LEGIT")
-
-            # bins in USD (since fraudTest amt is USD)
-            bins = [0, 10, 50, 100, 200, 500, 1000, np.inf]
-            labels = ["0–10", "10–50", "50–100", "100–200", "200–500", "500–1000", ">1000"]
-
-            tmp["amt_bin"] = pd.cut(tmp["amt"].astype(float), bins=bins, labels=labels, include_lowest=True)
-
-            # count per bin per label
-            pivot = (
-                tmp.groupby(["amt_bin", "pred_label"])
-                   .size()
-                   .unstack(fill_value=0)
-                   .reindex(labels)
-            )
-
-            # Plot
-            fig, ax = plt.subplots()
-            x = np.arange(len(labels))
-            width = 0.40
-
-            fraud_vals = pivot["FRAUD"].values if "FRAUD" in pivot.columns else np.zeros(len(labels))
-            legit_vals = pivot["LEGIT"].values if "LEGIT" in pivot.columns else np.zeros(len(labels))
-
-            ax.bar(x - width/2, fraud_vals, width, label="FRAUD")
-            ax.bar(x + width/2, legit_vals, width, label="LEGIT")
-
-            ax.set_xticks(x)
-            ax.set_xticklabels(labels, rotation=0)
-            ax.set_xlabel("Transaction Amount Range (USD)")
-            ax.set_ylabel("Number of Transactions")
-            ax.legend()
-
-            st.pyplot(fig)
+# ---------- Dashboard Overview ---------- if mode == "📊 Dashboard Overview": st.markdown("## 📊 Dashboard Overview") st.markdown("<span class='pill'>Default source: fraudTest</span>", unsafe_allow_html=True) st.write("") sample_n = min(555719, len(default_df)) sample_df = default_df.head(sample_n) proba_s, pred_s = predict_proba_for_df(sample_df) total = int(len(sample_df)) fraud_count = int(pred_s.sum()) fraud_rate = (fraud_count / total) * 100 if total else 0.0 c1, c2, c3, c4 = st.columns(4) c1.metric("Total Transactions", f"{total:,}") c2.metric("Detected Fraud)", f"{fraud_count:,}") c3.metric("Fraud Rate", f"{fraud_rate:.2f}%") c4.metric("Threshold", f"{threshold}") st.divider() colL, colR = st.columns(2) # ===== Graph 1: Amount Distribution (use readable buckets + axis labels) ===== with colL: st.subheader("Transaction Amount Distribution") st.caption("Amount Distribution by Predicted Fraud Status") if "amt" not in sample_df.columns: st.warning("Column amt not found.") else: tmp = sample_df.copy() tmp["pred_label"] = np.where(pred_s == 1, "FRAUD", "LEGIT") # readable buckets (RM) bins = [0, 10, 50, 100, 200, 500, 1000, np.inf] labels = ["0–10", "10–50", "50–100", "100–200", "200–500", "500–1000", ">1000"] tmp["amount_bucket"] = pd.cut(tmp["amt"].astype(float), bins=bins, labels=labels, include_lowest=True) count_df = ( tmp.groupby(["amount_bucket", "pred_label"]) .size() .reset_index(name="count") ) fig1 = px.bar( count_df, x="amount_bucket", y="count", color="pred_label", barmode="group", labels={ "amount_bucket": "Transaction Amount Range (RM)", "count": "Number of Transactions", "pred_label": "Predicted Fraud Status" }, title="" ) fig1.update_layout( paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"), legend_title_text="Fraud Status", xaxis=dict(title="Transaction Amount Range (USD)"), yaxis=dict(title="Number of Transactions"), ) st.plotly_chart(fig1, use_container_width=True) # ===== Graph 2: Fraud Rate by Category + axis labels ===== with colR: st.subheader("Fraud by Merchant Category") st.caption("Fraud Rate (%) by Category (Predicted)") if "category" not in sample_df.columns: st.warning("Column category not found.") else: tmp = sample_df.copy() tmp["pred"] = pred_s.astype(int) rate = ( tmp.groupby("category")["pred"] .mean() .mul(100) .sort_values(ascending=False) .head(15) .reset_index(name="fraud_rate_pct") ) fig2 = px.bar( rate, x="category", y="fraud_rate_pct", labels={ "category": "Merchant Category", "fraud_rate_pct": "Fraud Rate (%)" }, title="" ) fig2.update_layout( paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"), xaxis_tickangle=-25, xaxis=dict(title="Merchant Category"), yaxis=dict(title="Fraud Rate (%)"), ) st.plotly_chart(fig2, use_container_width=True) st.info("Overview uses a sample for speed. Use Real-time Detection for streaming/row-based testing.")
 
     # ==========================================================
     # Graph 2: Fraud Rate by Category (Top 15)
@@ -619,6 +547,7 @@ if mode == "📊 Dashboard Overview":
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
 
 
