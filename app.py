@@ -30,10 +30,46 @@ st.markdown(
     [data-testid="stHeader"] { background: rgba(0,0,0,0); }
     .block-container { padding-top: 1rem; }
 
-    /* ---------- Global text colors ---------- */
-    html, body, [class*="css"]  { color: #f9fafb !important; }
-    h1, h2, h3, h4, h5, h6 { color: #ffffff !important; font-weight: 800; }
-    p, span, label, div { color: #e5e7eb !important; }
+    /* =========================
+   FILE UPLOADER (Dark Theme)
+   ========================= */
+    [data-testid="stFileUploader"] {
+        background: #0f172a !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+        padding: 12px !important;
+    }
+    
+    /* The "dropzone" area */
+    [data-testid="stFileUploaderDropzone"] {
+        background: #111827 !important;      /* dark grey */
+        border: 2px dashed #374151 !important;
+        border-radius: 12px !important;
+    }
+    
+    /* Text inside the uploader */
+    [data-testid="stFileUploaderDropzone"] * {
+        color: #e5e7eb !important;           /* light grey text */
+        font-weight: 600 !important;
+    }
+    
+    /* Make the icon visible */
+    [data-testid="stFileUploaderDropzone"] svg {
+        fill: #e5e7eb !important;
+        color: #e5e7eb !important;
+    }
+    
+    /* Optional: highlight on hover */
+    [data-testid="stFileUploaderDropzone"]:hover {
+        border-color: #60a5fa !important;    /* blue highlight */
+        background: #0b1220 !important;
+    }
+    
+    
+        /* ---------- Global text colors ---------- */
+        html, body, [class*="css"]  { color: #f9fafb !important; }
+        h1, h2, h3, h4, h5, h6 { color: #ffffff !important; font-weight: 800; }
+        p, span, label, div { color: #e5e7eb !important; }
 
     /* ---------- Metric colors ---------- */
     [data-testid="stMetricLabel"] { color: #cbd5f5 !important; }
@@ -443,3 +479,4 @@ else:
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
