@@ -37,6 +37,90 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+st.markdown(
+    """
+    <style>
+    /* GLOBAL TEXT COLORS */
+    html, body, [class*="css"]  {
+        color: #f9fafb !important;   /* near-white */
+    }
+
+    /* App background */
+    [data-testid="stAppViewContainer"] {
+        background-color: #0b0f14;
+    }
+
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #0a0d12;
+        border-right: 1px solid #1f2937;
+    }
+
+    /* Headings */
+    h1, h2, h3, h4, h5, h6 {
+        color: #ffffff !important;
+        font-weight: 700;
+    }
+
+    /* Normal text */
+    p, span, label, div {
+        color: #e5e7eb !important;
+    }
+
+    /* Streamlit metrics */
+    [data-testid="stMetricLabel"] {
+        color: #cbd5f5 !important;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #ffffff !important;
+        font-size: 28px;
+        font-weight: 700;
+    }
+
+    /* Cards / containers */
+    .card {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 14px;
+        padding: 16px;
+        color: #f8fafc !important;
+    }
+
+    /* Success / Info banners */
+    .status-ok {
+        background: #064e3b;
+        border: 1px solid #10b981;
+        color: #ecfdf5 !important;
+        padding: 14px 18px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+
+    .status-info {
+        background: #0c4a6e;
+        border: 1px solid #38bdf8;
+        color: #e0f2fe !important;
+        padding: 14px 18px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+
+    /* Tables */
+    .stDataFrame {
+        color: #ffffff !important;
+    }
+
+    /* Buttons */
+    button {
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 st.markdown("<div class='title'>🔎 Real-Time Fraud Detection</div>", unsafe_allow_html=True)
 st.markdown(
@@ -364,3 +448,4 @@ else:
 # ---------- Data Preview (always at bottom) ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
