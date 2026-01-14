@@ -307,12 +307,8 @@ def plot_risk_gauge(risk_pct: float):
 st.sidebar.markdown("## ⚙️ Control Panel")
 mode = st.sidebar.radio(
     "Select Mode",
-    ["📊 Dashboard Overview", "🔎 Real-time Detection", "📈 Analytics", "⚡ Performance Metrics"]
+    ["📊 Dashboard Overview", "🔎 Real-time Detection"]
 )
-
-st.sidebar.divider()
-st.sidebar.markdown("### 🔐 Security Status")
-st.sidebar.success("Encryption: ENABLED")
 
 st.sidebar.markdown("### 🎛️ Detection Settings")
 threshold = st.sidebar.slider(
@@ -696,59 +692,11 @@ elif mode == "🔎 Real-time Detection":
                 csv = result.to_csv(index=False).encode("utf-8")
                 st.download_button("📥 Download Results CSV", data=csv, file_name="fraud_predictions.csv", mime="text/csv")
 
-# ---------- Analytics ----------
-elif mode == "📈 Analytics":
-    st.markdown("## 📈 Analytics")
 
-    sample_n = min(5000, len(default_df))
-    sample_df = default_df.head(sample_n)
-    proba, pred = predict_proba_for_df(sample_df)
+# ---------- Data Preview ----------
+with st.expander("📄 View default dataset preview (fraudTest)"):
+    st.dataframe(default_df.head(30), use_container_width=True)
 
-    st.markdown("### Fraud Probability Distribution (sample)")
-    fig = px.histogram(
-        pd.DataFrame({"fraud_probability": proba}),
-        x="fraud_probability",
-        nbins=50,
-        labels={"fraud_probability": "Fraud Probability"},
-    )
-    fig.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="white"),
-        xaxis=dict(title="Fraud Probability"),
-        yaxis=dict(title="Count"),
-    )
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown("### Fraud vs Legit Counts (sample)")
-    counts = pd.DataFrame({
-        "Predicted Label": ["LEGIT", "FRAUD"],
-        "Count": [int((pred == 0).sum()), int((pred == 1).sum())]
-    })
-    fig2 = px.bar(counts, x="Predicted Label", y="Count", labels={"Predicted Label": "Predicted Label", "Count": "Count"})
-    fig2.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="white"),
-        xaxis=dict(title="Predicted Label"),
-        yaxis=dict(title="Count"),
-    )
-    st.plotly_chart(fig2, use_container_width=True)
-
-# ---------- Performance Metrics ----------
-else:
-    st.markdown("## ⚡ Performance Metrics")
-
-    sample_n = min(5000, len(default_df))
-    sample_df = default_df.head(sample_n)
-    proba, pred = predict_proba_for_df(sample_df)
-
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Threshold", f"{threshold}")
-    c2.metric("Sample size", f"{sample_n:,}")
-    c3.metric("Predicted fraud", f"{int(pred.sum()):,}")
-
-    st.info("For true model performance metrics (Accuracy/Recall/ROC-AUC), use your training/testing evaluation scripts.")
 
 
 
