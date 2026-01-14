@@ -415,7 +415,7 @@ if mode == "📊 Dashboard Overview":
                 plot_bgcolor="rgba(0,0,0,0)",
                 font=dict(color="white"),
                 legend_title_text="Fraud Status",
-                xaxis=dict(title="Transaction Amount Range (RM)"),
+                xaxis=dict(title="Transaction Amount Range (USD)"),
                 yaxis=dict(title="Number of Transactions"),
             )
             st.plotly_chart(fig1, use_container_width=True)
@@ -765,3 +765,4 @@ else:
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
