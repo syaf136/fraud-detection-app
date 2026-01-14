@@ -9,12 +9,14 @@ import gdown
 # Needed for joblib load (custom class inside joblib)
 from fraud_preprocessor import FraudPreprocessor
 
-# ---- Plotly gauge (safe import) ----
+# Plotly (graphs + gauge)
 try:
+    import plotly.express as px
     import plotly.graph_objects as go
     PLOTLY_OK = True
 except Exception:
     PLOTLY_OK = False
+
 
 # =========================
 # Page config
@@ -24,6 +26,7 @@ st.set_page_config(
     page_icon="💳",
     layout="wide"
 )
+
 
 # =========================
 # CSS (Theme + Buttons + Text)
@@ -123,11 +126,13 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 # =========================
 # Google Drive data source
 # =========================
 FILE_ID = "1uheCe1Z8Sb6zW0a6PB62upfsx81EdhJC"
 LOCAL_PATH = "data/fraudTest.csv"
+
 
 # =========================
 # Load artifacts
@@ -141,6 +146,7 @@ def load_artifacts():
     feature_names = bundle.get("feature_names", None)
     return pre, model, feature_names
 
+
 @st.cache_data(show_spinner=True)
 def download_and_load_default_data():
     os.makedirs("data", exist_ok=True)
@@ -148,6 +154,7 @@ def download_and_load_default_data():
         url = f"https://drive.google.com/uc?id={FILE_ID}"
         gdown.download(url, LOCAL_PATH, quiet=False)
     return pd.read_csv(LOCAL_PATH)
+
 
 # =========================
 # Helpers
@@ -161,7 +168,6 @@ def find_label_col(df: pd.DataFrame):
     return None
 
 def drop_label_cols(df: pd.DataFrame):
-    """Drop label columns so model never receives them."""
     label_col = find_label_col(df)
     if label_col is None:
         return df.copy(), None
@@ -200,7 +206,6 @@ def confidence_level(proba: float, threshold: float):
     return "High" if proba <= 0.05 else "Medium"
 
 def plot_risk_gauge(risk_pct: float):
-    # Gauge = fraud_probability * 100
     if not PLOTLY_OK:
         st.metric("Risk Level", f"{risk_pct:.1f}%")
         return
@@ -249,7 +254,7 @@ def show_analysis_panel(row_df: pd.DataFrame, proba: float, pred: int, elapsed_m
         st.markdown("#### Transaction Details")
         st.write(f"**Merchant:** {merch}")
         st.write(f"**Category:** {cat}")
-        st.write(f"**Amount:** ${amt}" if isinstance(amt, (int, float, np.number)) else f"**Amount:** {amt}")
+        st.write(f"**Amount:** ${amt}")
         st.write(f"**Location:** {loc}")
 
     with b:
@@ -263,6 +268,7 @@ def show_analysis_panel(row_df: pd.DataFrame, proba: float, pred: int, elapsed_m
     with c:
         plot_risk_gauge(risk_pct)
 
+
 # =========================
 # Sidebar
 # =========================
@@ -272,6 +278,7 @@ mode = st.sidebar.radio("Select Mode", ["📊 Dashboard Overview", "🔎 Real-ti
 st.sidebar.markdown("### 🎛️ Detection Settings")
 threshold = st.sidebar.slider("Fraud Threshold (Probability)", 0.000001, 0.99, 0.01, 0.01)
 speed = st.sidebar.slider("Seconds per transaction", 0.0, 2.0, 0.2, 0.1)
+
 
 # =========================
 # Load model + data
@@ -287,33 +294,33 @@ top_msg2.markdown("<div class='status-info'>Loading dummy real-time data (fraudT
 default_df = download_and_load_default_data()
 top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df)}</div>", unsafe_allow_html=True)
 
+
 # =========================
 # PAGE 1: Dashboard Overview
 # =========================
-# ---------- Dashboard Overview ----------
-    if mode == "📊 Dashboard Overview":
-        st.markdown("## 📊 Dashboard Overview")
-        st.markdown("<span class='pill'>Default source: fraudTest</span>", unsafe_allow_html=True)
-        st.write("")
-    
-        sample_n = min(555719, len(default_df))
-        sample_df = default_df.head(sample_n)
-    
-        # ✅ Make sure your function call matches your function signature
-        proba_s, pred_s = predict_proba_for_df(sample_df, threshold)
-    
-        total = int(len(sample_df))
-        fraud_count = int(pred_s.sum())
-        fraud_rate = (fraud_count / total) * 100 if total else 0.0
-    
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Total Transactions", f"{total:,}")
-        c2.metric("Detected Fraud", f"{fraud_count:,}")
-        c3.metric("Fraud Rate", f"{fraud_rate:.2f}%")
-        c4.metric("Threshold", f"{threshold:.2f}")
-    
-        st.divider()
-        colL, colR = st.columns(2)
+if mode == "📊 Dashboard Overview":
+    st.markdown("## 📊 Dashboard Overview")
+    st.markdown("<span class='pill'>Default source: fraudTest</span>", unsafe_allow_html=True)
+    st.write("")
+
+    sample_n = min(555719, len(default_df))
+    sample_df = default_df.head(sample_n)
+
+    # ✅ correct function call
+    proba_s, pred_s = predict_proba_for_df(pre, model, feature_names, sample_df, threshold)
+
+    total = int(len(sample_df))
+    fraud_count = int(pred_s.sum())
+    fraud_rate = (fraud_count / total) * 100 if total else 0.0
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Total Transactions", f"{total:,}")
+    c2.metric("Detected Fraud", f"{fraud_count:,}")
+    c3.metric("Fraud Rate", f"{fraud_rate:.2f}%")
+    c4.metric("Threshold", f"{threshold:.2f}")
+
+    st.divider()
+    colL, colR = st.columns(2)
 
     # ===== Graph 1: Amount Distribution =====
     with colL:
@@ -322,20 +329,16 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
 
         if "amt" not in sample_df.columns:
             st.warning("Column `amt` not found.")
+        elif not PLOTLY_OK:
+            st.warning("Plotly not available. Install plotly to show charts.")
         else:
             tmp = sample_df.copy()
             tmp["pred_label"] = np.where(pred_s == 1, "FRAUD", "LEGIT")
 
-            # buckets in USD
             bins = [0, 10, 50, 100, 200, 500, 1000, np.inf]
             labels = ["0–10", "10–50", "50–100", "100–200", "200–500", "500–1000", ">1000"]
 
-            tmp["amount_bucket"] = pd.cut(
-                tmp["amt"].astype(float),
-                bins=bins,
-                labels=labels,
-                include_lowest=True
-            )
+            tmp["amount_bucket"] = pd.cut(tmp["amt"].astype(float), bins=bins, labels=labels, include_lowest=True)
 
             count_df = (
                 tmp.groupby(["amount_bucket", "pred_label"])
@@ -372,6 +375,8 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
 
         if "category" not in sample_df.columns:
             st.warning("Column `category` not found.")
+        elif not PLOTLY_OK:
+            st.warning("Plotly not available. Install plotly to show charts.")
         else:
             tmp = sample_df.copy()
             tmp["pred"] = pred_s.astype(int)
@@ -452,7 +457,6 @@ elif mode == "🔎 Real-time Detection":
                 row_df = default_df.iloc[[idx]]
 
                 shown_row, label_col = drop_label_cols(row_df)   # ✅ hide label from analyze display
-
                 st.caption(f"Selected row index: {idx}")
                 st.dataframe(shown_row, use_container_width=True)
 
@@ -573,22 +577,7 @@ elif mode == "🔎 Real-time Detection":
                 csv = result.to_csv(index=False).encode("utf-8")
                 st.download_button("📥 Download Results CSV", data=csv, file_name="fraud_predictions.csv", mime="text/csv")
 
+
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
