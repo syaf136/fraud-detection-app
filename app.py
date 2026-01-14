@@ -22,6 +22,44 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+
+    /* === ANALYZE BUTTON STYLE === */
+    button[kind="primary"] {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+        color: #ffffff !important;
+        border-radius: 12px !important;
+        border: none !important;
+        padding: 0.75rem 1.2rem !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        box-shadow: 0 0 12px rgba(37, 99, 235, 0.6);
+    }
+
+    button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #1e40af, #1e3a8a) !important;
+        box-shadow: 0 0 18px rgba(37, 99, 235, 0.9);
+        transform: translateY(-1px);
+    }
+
+    button[kind="primary"]:active {
+        background: #1e3a8a !important;
+        transform: translateY(0px);
+    }
+
+    button:disabled {
+        background: #334155 !important;
+        color: #cbd5e1 !important;
+        box-shadow: none !important;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <style>
       [data-testid="stAppViewContainer"] { background: #0b0f14; }
       [data-testid="stSidebar"] { background: #0a0d12; border-right: 1px solid #1f2a37; }
       [data-testid="stHeader"] { background: rgba(0,0,0,0); }
@@ -119,38 +157,6 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True
-
-    /* === ANALYZE BUTTON STYLE === */
-    button[kind="primary"] {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
-    color: #ffffff !important;
-    border-radius: 12px !important;
-    border: none !important;
-    padding: 0.75rem 1.2rem !important;
-    font-size: 16px !important;
-    font-weight: 700 !important;
-    box-shadow: 0 0 12px rgba(37, 99, 235, 0.6);
-}
-
-/* Hover effect */
-    button[kind="primary"]:hover {
-    background: linear-gradient(135deg, #1e40af, #1e3a8a) !important;
-    box-shadow: 0 0 18px rgba(37, 99, 235, 0.9);
-    transform: translateY(-1px);
-}
-
-/* Active / clicked */
-    button[kind="primary"]:active {
-    background: #1e3a8a !important;
-    transform: translateY(0px);
-}
-
-/* Disabled Analyze button */
-    button:disabled {
-    background: #334155 !important;
-    color: #cbd5e1 !important;
-    box-shadow: none !important;
-}
 
 )
 
@@ -479,6 +485,7 @@ else:
 # ---------- Data Preview (always at bottom) ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
 
 
