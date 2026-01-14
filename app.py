@@ -341,8 +341,6 @@ top_msg2.markdown("<div class='status-info'>Loading dummy real-time data (fraudT
 default_df = download_and_load_default_data()
 top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df)}</div>", unsafe_allow_html=True)
 
-top_msg3.markdown("<div class='status-ok'>Vector database initialized! (prototype status)</div>", unsafe_allow_html=True)
-
 # =========================
 # Pages
 # =========================
@@ -353,7 +351,7 @@ if mode == "📊 Dashboard Overview":
     st.markdown("<span class='pill'>Default source: fraudTest</span>", unsafe_allow_html=True)
     st.write("")
 
-    sample_n = min(20000, len(default_df))
+    sample_n = min(555719, len(default_df))
     sample_df = default_df.head(sample_n)
 
     proba_s, pred_s = predict_proba_for_df(sample_df)
@@ -696,6 +694,7 @@ elif mode == "🔎 Real-time Detection":
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
 
 
