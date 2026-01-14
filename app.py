@@ -291,29 +291,29 @@ top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df
 # PAGE 1: Dashboard Overview
 # =========================
 # ---------- Dashboard Overview ----------
-if mode == "📊 Dashboard Overview":
-    st.markdown("## 📊 Dashboard Overview")
-    st.markdown("<span class='pill'>Default source: fraudTest</span>", unsafe_allow_html=True)
-    st.write("")
-
-    sample_n = min(555719, len(default_df))
-    sample_df = default_df.head(sample_n)
-
-    # ✅ Make sure your function call matches your function signature
-    proba_s, pred_s = predict_proba_for_df(sample_df, threshold)
-
-    total = int(len(sample_df))
-    fraud_count = int(pred_s.sum())
-    fraud_rate = (fraud_count / total) * 100 if total else 0.0
-
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Transactions", f"{total:,}")
-    c2.metric("Detected Fraud", f"{fraud_count:,}")
-    c3.metric("Fraud Rate", f"{fraud_rate:.2f}%")
-    c4.metric("Threshold", f"{threshold:.2f}")
-
-    st.divider()
-    colL, colR = st.columns(2)
+    if mode == "📊 Dashboard Overview":
+        st.markdown("## 📊 Dashboard Overview")
+        st.markdown("<span class='pill'>Default source: fraudTest</span>", unsafe_allow_html=True)
+        st.write("")
+    
+        sample_n = min(555719, len(default_df))
+        sample_df = default_df.head(sample_n)
+    
+        # ✅ Make sure your function call matches your function signature
+        proba_s, pred_s = predict_proba_for_df(sample_df, threshold)
+    
+        total = int(len(sample_df))
+        fraud_count = int(pred_s.sum())
+        fraud_rate = (fraud_count / total) * 100 if total else 0.0
+    
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Total Transactions", f"{total:,}")
+        c2.metric("Detected Fraud", f"{fraud_count:,}")
+        c3.metric("Fraud Rate", f"{fraud_rate:.2f}%")
+        c4.metric("Threshold", f"{threshold:.2f}")
+    
+        st.divider()
+        colL, colR = st.columns(2)
 
     # ===== Graph 1: Amount Distribution =====
     with colL:
@@ -576,6 +576,7 @@ elif mode == "🔎 Real-time Detection":
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
 
 
