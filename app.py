@@ -206,8 +206,6 @@ top_msg2.markdown("<div class='status-info'>Loading dummy real-time data (fraudT
 default_df = download_and_load_default_data()
 top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df)}</div>", unsafe_allow_html=True)
 
-top_msg3.markdown("<div class='status-ok'>Vector database initialized! (prototype status)</div>", unsafe_allow_html=True)
-
 # =========================
 # Helpers: summary from probabilities
 # =========================
@@ -448,4 +446,5 @@ else:
 # ---------- Data Preview (always at bottom) ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
