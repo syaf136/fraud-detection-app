@@ -361,9 +361,9 @@ if mode == "📊 Dashboard Overview":
     fraud_rate = (fraud_count / total) * 100 if total else 0.0
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Transactions (sample)", f"{total:,}")
-    c2.metric("Detected Fraud (sample)", f"{fraud_count:,}")
-    c3.metric("Fraud Rate (sample)", f"{fraud_rate:.2f}%")
+    c1.metric("Total Transactions", f"{total:,}")
+    c2.metric("Detected Fraud)", f"{fraud_count:,}")
+    c3.metric("Fraud Rate", f"{fraud_rate:.2f}%")
     c4.metric("Threshold", f"{threshold}")
 
     st.divider()
@@ -694,6 +694,7 @@ elif mode == "🔎 Real-time Detection":
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
 
 
