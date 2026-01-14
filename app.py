@@ -18,25 +18,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Dark dashboard styling (close to your example) ---
-st.markdown(
-    """
-    <style>
-      [data-testid="stAppViewContainer"] { background: #0b0f14; }
-      [data-testid="stSidebar"] { background: #0a0d12; border-right: 1px solid #1f2a37; }
-      [data-testid="stHeader"] { background: rgba(0,0,0,0); }
-      .block-container { padding-top: 1rem; }
 
-      .status-ok { background:#0f2b1f; border:1px solid #1d5b3f; color:#a7f3d0; padding:12px 16px; border-radius:10px; }
-      .status-info { background:#0b1f33; border:1px solid #1e3a5f; color:#93c5fd; padding:12px 16px; border-radius:10px; }
-      .card { background:#0f172a; border:1px solid #233146; border-radius:14px; padding:16px; }
-      .title { font-size: 34px; font-weight: 800; color: #e5e7eb; }
-      .subtle { color: #9ca3af; }
-      .pill { display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid #2b3444; color:#cbd5e1; font-size:12px; }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 st.markdown("<div class='title'>🔎 Real-Time Fraud Detection</div>", unsafe_allow_html=True)
 st.markdown(
@@ -364,3 +346,4 @@ else:
 # ---------- Data Preview (always at bottom) ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
