@@ -249,14 +249,16 @@ def build_result_df(raw_df: pd.DataFrame, proba: np.ndarray, pred: np.ndarray):
 # Pages
 # =========================
 
-# ---------- Dashboard Overview ----------
 if mode == "📊 Dashboard Overview":
     st.markdown("## 📊 Dashboard Overview")
     st.markdown("<span class='pill'>Default source: fraudTest</span>", unsafe_allow_html=True)
     st.write("")
 
-    sample_n = min(2000, len(default_df))
+    # Use a sample for speed
+    sample_n = min(20000, len(default_df))  # you can increase/decrease
     sample_df = default_df.head(sample_n)
+
+    # Predict on sample
     proba_s, pred_s = predict_proba_for_df(sample_df)
 
     total = int(len(sample_df))
@@ -264,61 +266,150 @@ if mode == "📊 Dashboard Overview":
     legit_count = total - fraud_count
     fraud_rate = (fraud_count / total) * 100 if total else 0.0
 
+    # ---- KPI row ----
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Total Transactions (sample)", f"{total:,}")
     c2.metric("Detected Fraud (sample)", f"{fraud_count:,}")
     c3.metric("Fraud Rate (sample)", f"{fraud_rate:.2f}%")
     c4.metric("Threshold", f"{threshold}")
 
-    st.markdown("### 🔎 Recent Predictions (sample)")
-    preview = build_result_df(sample_df.head(50), proba_s[:50], pred_s[:50])
-    st.dataframe(preview, use_container_width=True)
-
-    st.info("Note: Overview uses a sample for speed. Use **Real-time Detection** to stream transactions.")
-
-# ---------- Real-time Detection ----------
-elif mode == "🔎 Real-time Detection":
-    st.markdown("## 🔎 Real-time Detection")
-    st.markdown("<span class='pill'>3 input modes</span>", unsafe_allow_html=True)
-    st.write("")
-
-    input_method = st.radio(
-        "Input Method",
-        ["🎲 Random from Default Dataset", "📌 By Rows (Stream)", "📤 Upload Another Dataset"],
-        horizontal=True
-    )
-
     st.divider()
 
-    # ========== 1) Random ==========
-    if input_method == "🎲 Random from Default Dataset":
-        left, right = st.columns([2, 1])
+    # -----------------------------------
+    # Graphs (match your example)
+    # -----------------------------------
+    colL, colR = st.columns(2)
 
-        with left:
-            st.markdown("### 🎲 Random Transaction")
-            st.markdown("<div class='subtle'>Pick a random row from fraudTest and run prediction.</div>", unsafe_allow_html=True)
+    # ===== Graph 1: Amount Distribution by Fraud Status =====
+    with colL:
+        st.subheader("Transaction Amount Distribution")
+        st.caption("Amount Distribution by Predicted Fraud Status")
 
-            # ✅ changed to PRIMARY so CSS applies
-            if st.button("Analyze Random Transaction", type="primary", use_container_width=True):
-                idx = np.random.randint(0, len(default_df))
-                row_df = default_df.iloc[[idx]]
+        # pick correct amount column
+        amt_col = "amt" if "amt" in sample_df.columns else None
 
-                X = prepare_features(pre, feature_names, row_df)
-                proba = float(model.predict_proba(X)[0, 1])
-                pred = 1 if proba >= threshold else 0
+        if amt_col is None:
+            st.warning("Column `amt` not found in dataset. Cannot plot amount distribution.")
+        else:
+            plot_df = sample_df[[amt_col]].copy()
+            plot_df["Fraud Status"] = pred_s  # 1=fraud,0=legit
 
-                st.caption(f"Selected row index: {idx}")
-                st.dataframe(row_df, use_container_width=True)
+            # separate amounts
+            legit_amt = plot_df.loc[plot_df["Fraud Status"] == 0, amt_col].astype(float)
+            fraud_amt = plot_df.loc[plot_df["Fraud Status"] == 1, amt_col].astype(float)
 
-                if pred == 1:
-                    st.error(f"🚨 FRAUD DETECTED | Probability = {proba:.6f}")
-                else:
-                    st.success(f"✅ LEGIT | Probability = {proba:.6f}")
+            # Use log scale bins for better visualization (amounts are skewed)
+            max_amt = float(plot_df[amt_col].max()) if len(plot_df) else 1.0
+            max_amt = max(max_amt, 1.0)
 
-        with right:
-            st.markdown("### ℹ️ Tips")
-            st.write("- Use a lower threshold (e.g., 0.01) to see more alerts.")
-            st.write("- Random mode is good for quick testing.")
+            bins = np.logspace(0, np.log10(max_amt + 1), 60)
+
+            chart_data = pd.DataFrame({
+                "LEGIT": np.histogram(legit_amt, bins=bins)[0],
+                "FRAUD": np.histogram(fraud_amt, bins=bins)[0],
+            }, index=bins[:-1])
+
+            st.bar_chart(chart_data)
+
+            st.caption("Tip: Distribution is highly skewed. Bars represent log-scaled bins.")
+
+    # ===== Graph 2: Fraud Rate by Merchant Category =====
+    with colR:
+        st.subheader("Fraud by Merchant Category")
+        st.caption("Fraud Rate (%) by Category (Predicted)")
+
+        # pick category column
+        cat_col = "category" if "category" in sample_df.columns else None
+        if cat_col is None:
+            st.warning("Column `category` not found in dataset. Cannot plot fraud by category.")
+        else:
+            cat_df = sample_df[[cat_col]].copy()
+            cat_df["pred"] = pred_s
+
+            # fraud rate per category
+            rate = cat_df.groupby(cat_col)["pred"].mean().sort_values(ascending=False) * 100
+
+            # top categories (avoid too many labels)
+            top_k = 15
+            rate_top = rate.head(top_k)
+
+            st.bar_chart(rate_top)
+
+            st.caption(f"Showing top {top_k} categories by predicted fraud rate.")
+
+    st.info("Overview uses a sample for speed. Real-time Detection streams row-by-row.")
+
+# ========== 1) Random ==========
+if input_method == "🎲 Random from Default Dataset":
+    left, right = st.columns([2, 1])
+
+    # init state
+    if "rand_idx" not in st.session_state:
+        st.session_state.rand_idx = None
+    if "rand_pred" not in st.session_state:
+        st.session_state.rand_pred = None
+    if "rand_proba" not in st.session_state:
+        st.session_state.rand_proba = None
+
+    with left:
+        st.markdown("### 🎲 Random Transaction")
+        st.markdown("<div class='subtle'>Pick a random row from fraudTest and run prediction.</div>", unsafe_allow_html=True)
+
+        if st.button("Analyze Random Transaction", type="primary", use_container_width=True):
+            idx = int(np.random.randint(0, len(default_df)))
+            row_df = default_df.iloc[[idx]]
+
+            # preprocess + predict
+            X = prepare_features(pre, feature_names, row_df)
+            proba = float(model.predict_proba(X)[0, 1])
+            pred = 1 if proba >= threshold else 0
+
+            # store in session_state so it stays visible after reruns
+            st.session_state.rand_idx = idx
+            st.session_state.rand_pred = pred
+            st.session_state.rand_proba = proba
+
+        # If we already generated a random transaction before, show it
+        if st.session_state.rand_idx is not None:
+            idx = st.session_state.rand_idx
+            proba = st.session_state.rand_proba
+            pred = st.session_state.rand_pred
+
+            st.caption(f"Selected row index: {idx}")
+
+            # Show the row that was chosen
+            chosen_row = default_df.iloc[[idx]]
+            st.dataframe(chosen_row, use_container_width=True)
+
+            # Prediction banner
+            if pred == 1:
+                st.error(f"🚨 FRAUD | Probability = {proba:.6f}")
+            else:
+                st.success(f"✅ LEGIT | Probability = {proba:.6f}")
+
+            # ✅ Verification section: show the exact same row again from dataset
+            st.markdown("### ✅ Verification (Exact Row from Dataset)")
+            st.markdown("<div class='subtle'>This is the exact row from fraudTest that was used for prediction.</div>", unsafe_allow_html=True)
+
+            # If your dataset has a true label column, show it
+            possible_label_cols = ["is_fraud", "Class", "label", "target"]
+            label_col = next((c for c in possible_label_cols if c in default_df.columns), None)
+
+            if label_col is not None:
+                actual = int(default_df.loc[idx, label_col])
+                st.info(f"**Actual label ({label_col})** = `{actual}` | **Predicted** = `{pred}`")
+            else:
+                st.warning("No actual label column found in fraudTest, so we can’t compare Actual vs Predicted.")
+
+            # show row again (verification)
+            st.dataframe(default_df.loc[[idx]], use_container_width=True)
+
+    with right:
+        st.markdown("### ℹ️ Tips")
+        st.write("- Use a lower threshold (e.g., 0.01) to see more alerts.")
+        st.write("- Random mode is good for quick testing.")
+        st.write("- Verification shows the exact row used for prediction.")
+
 
     # ========== 2) By rows (stream) ==========
     elif input_method == "📌 By Rows (Stream)":
@@ -479,4 +570,5 @@ else:
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
