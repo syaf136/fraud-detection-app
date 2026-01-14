@@ -10,7 +10,7 @@ import gdown
 from fraud_preprocessor import FraudPreprocessor
 
 # =========================
-# Page config + theme
+# Page config
 # =========================
 st.set_page_config(
     page_title="Fraud Detection Dashboard",
@@ -18,12 +18,59 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Dark dashboard styling (close to your example) ---
+# =========================
+# CSS (Theme + Buttons + Text)
+# =========================
 st.markdown(
     """
     <style>
+    /* ---------- App background + sidebar ---------- */
+    [data-testid="stAppViewContainer"] { background: #0b0f14; }
+    [data-testid="stSidebar"] { background: #0a0d12; border-right: 1px solid #1f2937; }
+    [data-testid="stHeader"] { background: rgba(0,0,0,0); }
+    .block-container { padding-top: 1rem; }
 
-    /* === ANALYZE BUTTON STYLE === */
+    /* ---------- Global text colors ---------- */
+    html, body, [class*="css"]  { color: #f9fafb !important; }
+    h1, h2, h3, h4, h5, h6 { color: #ffffff !important; font-weight: 800; }
+    p, span, label, div { color: #e5e7eb !important; }
+
+    /* ---------- Metric colors ---------- */
+    [data-testid="stMetricLabel"] { color: #cbd5f5 !important; }
+    [data-testid="stMetricValue"] { color: #ffffff !important; font-size: 28px; font-weight: 800; }
+
+    /* ---------- Status banners ---------- */
+    .status-ok {
+        background: #064e3b;
+        border: 1px solid #10b981;
+        color: #ecfdf5 !important;
+        padding: 14px 18px;
+        border-radius: 10px;
+        font-weight: 700;
+    }
+    .status-info {
+        background: #0c4a6e;
+        border: 1px solid #38bdf8;
+        color: #e0f2fe !important;
+        padding: 14px 18px;
+        border-radius: 10px;
+        font-weight: 700;
+    }
+
+    /* ---------- Title helpers ---------- */
+    .title { font-size: 34px; font-weight: 900; color: #ffffff; }
+    .subtle { color: #9ca3af !important; }
+    .pill {
+        display:inline-block; padding:4px 10px; border-radius:999px;
+        border:1px solid #2b3444; color:#cbd5e1 !important; font-size:12px;
+    }
+
+    /* =========================
+       BUTTON STYLES (IMPORTANT)
+       =========================
+       These apply ONLY to Streamlit PRIMARY buttons.
+       So we must set type="primary" in Python for Analyze/Run/Start.
+    */
     button[kind="primary"] {
         background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
         color: #ffffff !important;
@@ -31,139 +78,32 @@ st.markdown(
         border: none !important;
         padding: 0.75rem 1.2rem !important;
         font-size: 16px !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
         box-shadow: 0 0 12px rgba(37, 99, 235, 0.6);
     }
-
     button[kind="primary"]:hover {
         background: linear-gradient(135deg, #1e40af, #1e3a8a) !important;
         box-shadow: 0 0 18px rgba(37, 99, 235, 0.9);
         transform: translateY(-1px);
     }
-
     button[kind="primary"]:active {
         background: #1e3a8a !important;
         transform: translateY(0px);
     }
 
-    /* Disabled Analyze button — visible but inactive */
-    button:disabled {
-        background: #1f2937 !important;   /* dark grey */
-        color: #9ca3af !important;        /* readable grey text */
+    /* Disabled primary buttons: dark grey (visible) */
+    button[kind="primary"]:disabled {
+        background: #1f2937 !important;
+        color: #9ca3af !important;
         border: 1px solid #374151 !important;
         box-shadow: none !important;
-        opacity: 1 !important;            /* prevent Streamlit dimming */
+        opacity: 1 !important;
         cursor: not-allowed !important;
     }
-
     </style>
     """,
     unsafe_allow_html=True
 )
-
-st.markdown(
-    """
-    <style>
-      [data-testid="stAppViewContainer"] { background: #0b0f14; }
-      [data-testid="stSidebar"] { background: #0a0d12; border-right: 1px solid #1f2a37; }
-      [data-testid="stHeader"] { background: rgba(0,0,0,0); }
-      .block-container { padding-top: 1rem; }
-
-      .status-ok { background:#0f2b1f; border:1px solid #1d5b3f; color:#a7f3d0; padding:12px 16px; border-radius:10px; }
-      .status-info { background:#0b1f33; border:1px solid #1e3a5f; color:#93c5fd; padding:12px 16px; border-radius:10px; }
-      .card { background:#0f172a; border:1px solid #233146; border-radius:14px; padding:16px; }
-      .title { font-size: 34px; font-weight: 800; color: #e5e7eb; }
-      .subtle { color: #9ca3af; }
-      .pill { display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid #2b3444; color:#cbd5e1; font-size:12px; }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-st.markdown(
-    """
-    <style>
-    /* GLOBAL TEXT COLORS */
-    html, body, [class*="css"]  {
-        color: #f9fafb !important;   /* near-white */
-    }
-
-    /* App background */
-    [data-testid="stAppViewContainer"] {
-        background-color: #0b0f14;
-    }
-
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #0a0d12;
-        border-right: 1px solid #1f2937;
-    }
-
-    /* Headings */
-    h1, h2, h3, h4, h5, h6 {
-        color: #ffffff !important;
-        font-weight: 700;
-    }
-
-    /* Normal text */
-    p, span, label, div {
-        color: #e5e7eb !important;
-    }
-
-    /* Streamlit metrics */
-    [data-testid="stMetricLabel"] {
-        color: #cbd5f5 !important;
-    }
-
-    [data-testid="stMetricValue"] {
-        color: #ffffff !important;
-        font-size: 28px;
-        font-weight: 700;
-    }
-
-    /* Cards / containers */
-    .card {
-        background: #0f172a;
-        border: 1px solid #334155;
-        border-radius: 14px;
-        padding: 16px;
-        color: #f8fafc !important;
-    }
-
-    /* Success / Info banners */
-    .status-ok {
-        background: #064e3b;
-        border: 1px solid #10b981;
-        color: #ecfdf5 !important;
-        padding: 14px 18px;
-        border-radius: 10px;
-        font-weight: 600;
-    }
-
-    .status-info {
-        background: #0c4a6e;
-        border: 1px solid #38bdf8;
-        color: #e0f2fe !important;
-        padding: 14px 18px;
-        border-radius: 10px;
-        font-weight: 600;
-    }
-
-    /* Tables */
-    .stDataFrame {
-        color: #ffffff !important;
-    }
-
-    /* Buttons */
-    button {
-        color: #ffffff !important;
-        font-weight: 600;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-
-)
-
 
 st.markdown("<div class='title'>🔎 Real-Time Fraud Detection</div>", unsafe_allow_html=True)
 st.markdown(
@@ -184,7 +124,11 @@ LOCAL_PATH = "data/fraudTest.csv"
 @st.cache_resource
 def load_artifacts():
     pre = joblib.load("artifacts/preprocessor.joblib")
-    bundle = joblib.load("artifacts/xgb_fraud_model.joblib") if os.path.exists("artifacts/xgb_fraud_model.joblib") else joblib.load("xgb_fraud_model.joblib")
+
+    # support both locations for the model artifact
+    model_path = "artifacts/xgb_fraud_model.joblib"
+    bundle = joblib.load(model_path) if os.path.exists(model_path) else joblib.load("xgb_fraud_model.joblib")
+
     model = bundle["model"]
     feature_names = bundle.get("feature_names", None)
     return pre, model, feature_names
@@ -200,7 +144,6 @@ def download_and_load_default_data():
 def prepare_features(pre, model_feature_names, raw_df: pd.DataFrame):
     X = pre.transform(raw_df)
     if model_feature_names is not None:
-        # ensure same column order as training
         X = X.reindex(columns=model_feature_names, fill_value=0)
     return X
 
@@ -249,8 +192,10 @@ top_msg2.markdown("<div class='status-info'>Loading dummy real-time data (fraudT
 default_df = download_and_load_default_data()
 top_msg2.markdown(f"<div class='status-ok'>Data loaded ✅ Rows: {len(default_df)}</div>", unsafe_allow_html=True)
 
+top_msg3.markdown("<div class='status-ok'>Vector database initialized! (prototype status)</div>", unsafe_allow_html=True)
+
 # =========================
-# Helpers: summary from probabilities
+# Helpers
 # =========================
 def predict_proba_for_df(df_in: pd.DataFrame):
     X = prepare_features(pre, feature_names, df_in)
@@ -265,7 +210,7 @@ def build_result_df(raw_df: pd.DataFrame, proba: np.ndarray, pred: np.ndarray):
     return out
 
 # =========================
-# Main Pages
+# Pages
 # =========================
 
 # ---------- Dashboard Overview ----------
@@ -274,7 +219,6 @@ if mode == "📊 Dashboard Overview":
     st.markdown("<span class='pill'>Default source: fraudTest</span>", unsafe_allow_html=True)
     st.write("")
 
-    # Light analytics based on default_df (fast preview)
     sample_n = min(2000, len(default_df))
     sample_df = default_df.head(sample_n)
     proba_s, pred_s = predict_proba_for_df(sample_df)
@@ -318,7 +262,8 @@ elif mode == "🔎 Real-time Detection":
             st.markdown("### 🎲 Random Transaction")
             st.markdown("<div class='subtle'>Pick a random row from fraudTest and run prediction.</div>", unsafe_allow_html=True)
 
-            if st.button("Analyze Random Transaction", use_container_width=True):
+            # ✅ changed to PRIMARY so CSS applies
+            if st.button("Analyze Random Transaction", type="primary", use_container_width=True):
                 idx = np.random.randint(0, len(default_df))
                 row_df = default_df.iloc[[idx]]
 
@@ -339,19 +284,30 @@ elif mode == "🔎 Real-time Detection":
             st.write("- Use a lower threshold (e.g., 0.01) to see more alerts.")
             st.write("- Random mode is good for quick testing.")
 
-    # ========== 2) By rows (stream like earlier system) ==========
+    # ========== 2) By rows (stream) ==========
     elif input_method == "📌 By Rows (Stream)":
         st.markdown("### 📌 Stream by Row Range")
         st.markdown("<div class='subtle'>Simulate real-time incoming transactions from a chosen start row.</div>", unsafe_allow_html=True)
 
         c1, c2, c3 = st.columns(3)
         with c1:
-            start_row = st.number_input("Start row (0-based)", min_value=0, max_value=len(default_df) - 1, value=0)
+            start_row = st.number_input(
+                "Start row (0-based)",
+                min_value=0,
+                max_value=len(default_df) - 1,
+                value=0
+            )
         with c2:
-            max_rows = st.number_input("Rows to stream", min_value=1, max_value=min(5000, len(default_df)), value=min(200, len(default_df)))
+            max_rows = st.number_input(
+                "Rows to stream",
+                min_value=1,
+                max_value=min(5000, len(default_df)),
+                value=min(200, len(default_df))
+            )
         with c3:
             st.write("")
-            stream_btn = st.button("▶️ Start Streaming", use_container_width=True)
+            # ✅ changed to PRIMARY so CSS applies
+            stream_btn = st.button("▶️ Start Streaming", type="primary", use_container_width=True)
 
         reset_btn = st.button("🔄 Reset View", use_container_width=False)
         if reset_btn:
@@ -425,7 +381,8 @@ elif mode == "🔎 Real-time Detection":
                 st.success(f"Uploaded dataset loaded ✅ Rows: {len(new_df)}")
                 st.dataframe(new_df.head(20), use_container_width=True)
 
-                if st.button("Run Prediction on Uploaded Dataset", use_container_width=True):
+                # ✅ changed to PRIMARY so CSS applies
+                if st.button("Run Prediction on Uploaded Dataset", type="primary", use_container_width=True):
                     proba, pred = predict_proba_for_df(new_df)
                     result = build_result_df(new_df, proba, pred)
 
@@ -471,7 +428,6 @@ else:
     st.markdown("<div class='subtle'>These are deployment-time monitoring metrics (not full training evaluation).</div>", unsafe_allow_html=True)
     st.write("")
 
-    # Use a small sample for quick reporting
     sample_n = min(5000, len(default_df))
     sample_df = default_df.head(sample_n)
     proba, pred = predict_proba_for_df(sample_df)
@@ -482,16 +438,8 @@ else:
     c2.metric("Sample size", f"{sample_n:,}")
     c3.metric("Predicted fraud", f"{int(pred.sum()):,}")
 
-    st.info(
-        "For true model performance metrics (Accuracy/Recall/ROC-AUC), report the values from your training/testing evaluation scripts."
-    )
+    st.info("For true model performance metrics (Accuracy/Recall/ROC-AUC), report the values from training/testing evaluation scripts.")
 
-# ---------- Data Preview (always at bottom) ----------
+# ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
-
-
-
-
-
-
