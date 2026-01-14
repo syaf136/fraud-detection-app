@@ -46,10 +46,14 @@ st.markdown(
         transform: translateY(0px);
     }
 
+    /* Disabled Analyze button — visible but inactive */
     button:disabled {
-        background: #334155 !important;
-        color: #cbd5e1 !important;
+        background: #1f2937 !important;   /* dark grey */
+        color: #9ca3af !important;        /* readable grey text */
+        border: 1px solid #374151 !important;
         box-shadow: none !important;
+        opacity: 1 !important;            /* prevent Streamlit dimming */
+        cursor: not-allowed !important;
     }
 
     </style>
@@ -485,6 +489,7 @@ else:
 # ---------- Data Preview (always at bottom) ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
 
 
