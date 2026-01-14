@@ -585,13 +585,6 @@ elif mode == "🔎 Real-time Detection":
                     st.write(f"**Similarity Score:** {similarity_pct:.1f}%")
                     st.write(f"**Detection Time:** {elapsed_ms:.2f} ms")
 
-                with c:
-                    st.markdown("#### Similar Transactions")
-                    st.write(f"**Total Found:** {similar_total}")
-                    st.write(f"**Fraud Count:** {similar_fraud}")
-                    st.write(f"**Fraud Ratio:** {fraud_ratio:.1f}%")
-                    st.write("")  # spacing
-                    plot_risk_gauge(risk_pct)
 
                 # Verification section (show exact row + actual label if exists)
                 st.write("")
@@ -756,6 +749,7 @@ else:
     c3.metric("Predicted fraud", f"{int(pred.sum()):,}")
 
     st.info("For true model performance metrics (Accuracy/Recall/ROC-AUC), use your training/testing evaluation scripts.")
+
 
 
 
