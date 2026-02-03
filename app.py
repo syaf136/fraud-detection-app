@@ -420,7 +420,7 @@ elif mode == "🔎 Real-time Detection":
 
     input_method = st.radio(
         "Input Method",
-        ["🎲 Random from Default Dataset", "📌 By Rows (Stream)", "📤 Upload Another Dataset"],
+        ["🎲 Random from Default Dataset", "📌 By Rows (Stream)"],
         horizontal=True
     )
 
@@ -549,4 +549,5 @@ elif mode == "🔎 Real-time Detection":
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
