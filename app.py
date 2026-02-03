@@ -415,7 +415,6 @@ if mode == "📊 Dashboard Overview":
 # =========================
 elif mode == "🔎 Real-time Detection":
     st.markdown("## 🔎 Real-time Detection")
-    st.markdown("<span class='pill'>3 input modes</span>", unsafe_allow_html=True)
     st.write("")
 
     input_method = st.radio(
@@ -549,5 +548,6 @@ elif mode == "🔎 Real-time Detection":
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
 
 
