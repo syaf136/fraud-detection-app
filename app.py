@@ -409,8 +409,6 @@ if mode == "📊 Dashboard Overview":
             )
             st.plotly_chart(fig2, use_container_width=True)
 
-    st.info("Overview uses a sample for speed. Use Real-time Detection for streaming/row-based testing.")
-
 
 # =========================
 # PAGE 2: Real-time Detection
@@ -475,12 +473,6 @@ elif mode == "🔎 Real-time Detection":
                 else:
                     st.warning("No label column found. Cannot compare actual vs predicted.")
                 st.dataframe(row_df, use_container_width=True)
-
-        with right:
-            st.markdown("### ℹ️ Tips")
-            st.write("- Threshold 0.01 means 1.0% risk cutoff.")
-            st.write("- Gauge = fraud_probability × 100.")
-            st.write("- Analyze view hides label; verification shows it.")
 
     # -------- 2) Stream --------
     elif input_method == "📌 By Rows (Stream)":
@@ -554,30 +546,7 @@ elif mode == "🔎 Real-time Detection":
 
             st.success("✅ Streaming finished.")
 
-    # -------- 3) Upload --------
-    else:
-        st.markdown("### 📤 Upload Another Dataset (CSV)")
-        uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
-
-        if uploaded_file is not None:
-            new_df = pd.read_csv(uploaded_file)
-            st.success(f"Uploaded dataset loaded ✅ Rows: {len(new_df)}")
-
-            lbl = find_label_col(new_df)
-            show_df = new_df.drop(columns=[lbl]) if lbl else new_df
-            st.dataframe(show_df.head(20), use_container_width=True)
-
-            if st.button("Run Prediction on Uploaded Dataset", type="primary", use_container_width=True):
-                proba, pred = predict_proba_for_df(pre, model, feature_names, new_df, threshold)
-                result = build_result_df(show_df, proba, pred)
-
-                st.warning(f"🚨 Total Fraud Detected: {int((pred == 1).sum()):,} / {len(result):,}")
-                st.dataframe(result.head(100), use_container_width=True)
-
-                csv = result.to_csv(index=False).encode("utf-8")
-                st.download_button("📥 Download Results CSV", data=csv, file_name="fraud_predictions.csv", mime="text/csv")
-
-
 # ---------- Data Preview ----------
 with st.expander("📄 View default dataset preview (fraudTest)"):
     st.dataframe(default_df.head(30), use_container_width=True)
+
